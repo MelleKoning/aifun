@@ -20,7 +20,7 @@ services:
       - OLLAMA_HOST=0.0.0.0
 
   open-webui:
-    image: ghcr.io/open-webui/open-webui:main
+    image: ghcr.io/open-webui/open-webui:latest
     container_name: open-webui
     volumes:
       - open-webui:/app/backend/data
