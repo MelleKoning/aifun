@@ -12,12 +12,13 @@ services:
             capabilities: ["gpu"]
             count: all
     volumes:
-      - ~/.ollama:/root/.ollama
+      - ~/src/.ollama:/root/.ollama
     restart: unless-stopped
     tty: true
     environment:
       - gpus=all
       - OLLAMA_HOST=0.0.0.0
+      - OLLAMA_USE_GPU=true
 
   open-webui:
     image: ghcr.io/open-webui/open-webui:latest
