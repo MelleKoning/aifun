@@ -18,6 +18,7 @@ services:
     environment:
       - gpus=all
       - OLLAMA_HOST=0.0.0.0
+      - OLLAMA_CONTEXT_LENGTH=8192
       - OLLAMA_USE_GPU=true
 
   open-webui:
@@ -29,7 +30,7 @@ services:
     depends_on:
       - ollama
     ports:
-      - 3000:8080
+      - 20080:8080
     environment:
       - 'OLLAMA_BASE_URL=http://ollama:11434'
       - 'WEBUI_SECRET_KEY='
