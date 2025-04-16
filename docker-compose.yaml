@@ -12,7 +12,7 @@ services:
             capabilities: ["gpu"]
             count: all
     volumes:
-      - ~/src/.ollama:/root/.ollama
+      - ~/.ollama:/root/.ollama
     restart: unless-stopped
     tty: true
     environment:
