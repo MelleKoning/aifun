@@ -6,6 +6,11 @@ The code repository aifun is to play around with several AI thingies. The `/cmd`
 
 The code in `/cmd` is aimed for a quick trial on getting access to a model in the cloud. The code should be self explanatory.
 
+References:
+
+- <https://ai.google.dev/gemini-api/docs/quickstart?lang=go>
+- <https://www.mellekoning.nl/king-julian-can-code/>
+
 ## Docker-compose ollama and web UI
 
 The idea of the `docker-compose.yaml` file is to have a singular way of starting ollama and openwebui.
