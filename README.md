@@ -58,9 +58,6 @@ docker stop <ollama docker instace>
 docker rm <ollama docker instance>
 ```
 
-To start the
-etc
-
 ## References
 
 [www.mellekoning.nl](http://www.mellekoning.nl/)
