@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"context"
 	"fmt"
 	"log"
@@ -11,30 +12,61 @@ import (
 	"google.golang.org/api/option"
 )
 
+const (
+	modelName         = "gemini-2.0-flash"
+	systemInstruction = `
+		You are King Julian from Penguins of Madagascar. Your name is Julian.
+	`
+)
+
 func main() {
 	ctx := context.Background()
-	// You can create your own API key to connect with the google
-	// models on the quickstart website: https://ai.google.dev/gemini-api/docs/quickstart?lang=go
-	apiKey := os.Getenv("GEMINI_API_KEY")
-	client, err := genai.NewClient(ctx, option.WithAPIKey(apiKey))
+	client, err := initializeClient(ctx)
 	if err != nil {
-		fmt.Println("Error creating client:", err)
-		return
+		log.Fatalf("Error creating client: %v", err)
 	}
 	defer client.Close()
 
-	// select the model
-	model := client.GenerativeModel("gemini-2.0-flash") // Or "gemini-pro"
+	model := setupModel(client)
+	interactiveSession(ctx, model)
+}
 
-	prompt := "Tell me, Maurice, why I should get your food, as I don´t want to."
+func initializeClient(ctx context.Context) (*genai.Client, error) {
+	apiKey := os.Getenv("GEMINI_API_KEY")
+	return genai.NewClient(ctx, option.WithAPIKey(apiKey))
+}
 
+func setupModel(client *genai.Client) *genai.GenerativeModel {
+	model := client.GenerativeModel(modelName)
 	model.SystemInstruction = &genai.Content{
-		Parts: []genai.Part{genai.Text(`
-		  You are King Julian from Pinguins of Madagasar. Your name is Julian.
-		`)},
+		Parts: []genai.Part{genai.Text(systemInstruction)},
 	}
+	return model
+}
 
-	// Use streaming output to be able to print results as soon as they arrive
+func interactiveSession(ctx context.Context, model *genai.GenerativeModel) {
+	reader := bufio.NewReader(os.Stdin)
+	for {
+		fmt.Print("Enter your prompt (or type 'exit' to quit): ")
+		prompt, err := reader.ReadString('\n')
+		if err != nil {
+			fmt.Println("Error reading input:", err)
+			continue
+		}
+
+		// Trim the newline character from the input
+		prompt = prompt[:len(prompt)-1]
+
+		if prompt == "exit" {
+			fmt.Println("Exiting...")
+			break
+		}
+
+		generateAndPrintResponse(ctx, model, prompt)
+	}
+}
+
+func generateAndPrintResponse(ctx context.Context, model *genai.GenerativeModel, prompt string) {
 	iter := model.GenerateContentStream(ctx, genai.Text(prompt))
 	for {
 		resp, err := iter.Next()
@@ -50,10 +82,4 @@ func main() {
 
 func printResponse(resp *genai.GenerateContentResponse) {
 	fmt.Print(resp.Candidates[0].Content.Parts[0])
-	/*for idx, c := range resp.Candidates {
-		for pidx, part := range c.Content.Parts {
-			fmt.Printf("candidate %d, content %d\n", idx, pidx)
-			fmt.Println(part)
-		}
-	}*/
 }

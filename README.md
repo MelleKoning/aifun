@@ -1,8 +1,12 @@
 # aifun
 
-aifun is to run an llm locally
+The code repository aifun is to play around with several AI thingies. The `/cmd` contains some GoLang code to run against a cloud model, and the `docker-compose.yml` is to run certain models locally.
 
-## ollama
+## Concept of accessing a model via an API
+
+The code in `/cmd` is aimed for a quick trial on getting access to a model in the cloud. The code should be self explanatory.
+
+## Docker-compose ollama and web UI
 
 The idea of the `docker-compose.yaml` file is to have a singular way of starting ollama and openwebui.
 
@@ -20,7 +24,7 @@ Then open a browser and go to the url:
 http://localhost:20080
 ```
 
-The above commands will startup ollama and openwebui and keep the console open. This way, you can see the incoming HTTP requests that openwebui is executing against ollama. 
+The above commands will startup ollama and openwebui and keep the console open. This way, you can see the incoming HTTP requests that openwebui is executing against ollama.
 
 Especially when using certain tools, like websearch, within openwebui, it is nice to see what requests ollama and openwebui are executing "under the hood". Sometimes requests fail and all of the logging that the docker containers are doing makes it a bit more clear what is happening when `openwebui` is exercising requests with `ollama`, and how the diferent LLM models are being exercised by `ollama`. For example, at startup, you can see if `ollama` was able to find NVIDIA hardware, as if not, it will fall back to CPU which makes performance far worse.
 
@@ -54,6 +58,9 @@ docker stop <ollama docker instace>
 docker rm <ollama docker instance>
 ```
 
-To start the 
+To start the
 etc
 
+## References
+
+[www.mellekoning.nl](http://www.mellekoning.nl/)
