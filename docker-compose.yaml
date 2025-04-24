@@ -18,7 +18,7 @@ services:
     environment:
       - gpus=all
       - OLLAMA_HOST=0.0.0.0
-      - OLLAMA_CONTEXT_LENGTH=8192
+      - OLLAMA_CONTEXT_LENGTH=30000
       - OLLAMA_USE_GPU=true
 
   open-webui:
