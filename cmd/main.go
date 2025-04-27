@@ -6,23 +6,28 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strings"
 
 	"github.com/google/generative-ai-go/genai"
 	"google.golang.org/api/iterator"
 	"google.golang.org/api/option"
+
+	glamour "github.com/charmbracelet/glamour"
 )
 
 const (
 	modelName    = "gemini-2.0-flash"
 	julianPrompt = "You are King Julian from Penguins of Madagascar. Your name is Julian."
 
-	gitReviewPrompt = `You are an expert developer and git super user. You do code reviews based on the git diff output between two commits. Complete the following tasks, and be extremely critical and precise in your review:
+	gitReviewPrompt = `You are an expert developer and git super user. You do code reviews based on the git diff output between two commits.
+	* The diff contains a few unchanged lines of code. Focus on the code that changed. Changed are added and removed lines.
+	* The added lines start with a "+" and the removed lines that start with a "-"
+	Complete the following tasks, and be extremely critical and precise in your review:
 	* [Description] Describe the code change.
 	* [Obvious errors] Look for obvious errors in the code and suggest how to fix.
-	* [Improvements] Suggest improvements where relevant.
+	* [Improvements] Suggest improvements where relevant. Suggestions must be rendered as code, not as diff.
 	* [Friendly advice] Give some friendly advice or heads up where relevant.
 	* [Stop when done] Stop when you are done with the review.
-	* Focus on code changes by inspecting the added lines that start with a "+" and the removed lines that start with a "-"
 
 	This is the git diff output between two commits: \n\n {diff}
 
@@ -37,6 +42,23 @@ type Request struct {
 }
 
 func main() {
+	printGlamourString(`
+# Welcome to aifun!
+
+You first have to choose a prompt.
+
+> This is a quote
+
+This is some rendered code:
+
+~~~golang
+func main() {
+   fmt.Println("hello")
+}
+~~~
+
+That was the markdown rendering test
+	`)
 	request := new(Request)
 	ctx := context.Background()
 	var err error
@@ -73,13 +95,13 @@ func selectAPrompt() string {
 	}
 
 	// Display the list of prompts
-	fmt.Println("Select a prompt by entering the corresponding number:")
+	printGlamourString("Select a prompt by entering the corresponding number:")
 	for i, prompt := range prompts {
-		fmt.Printf("%d. %s\n", i+1, prompt)
+		printGlamourString(fmt.Sprintf("%d. %s\n", i+1, prompt))
 	}
 
 	// Read the user's selection
-	fmt.Print("Enter your choice: ")
+	printGlamourString("Enter your choice: ")
 	choiceStr, err := reader.ReadString('\n')
 	if err != nil {
 		fmt.Println("Error reading input:", err)
@@ -102,7 +124,7 @@ func selectAPrompt() string {
 
 	// Use the selected prompt
 	selectedPrompt := prompts[choice-1]
-	fmt.Printf("You selected: %s\n", selectedPrompt)
+	printGlamourString(fmt.Sprintf("You selected: %s\n", selectedPrompt))
 
 	return prompts[choice-1]
 }
@@ -146,7 +168,15 @@ func interactiveSession(ctx context.Context, request *Request) {
 }
 
 func generateAndPrintResponse(ctx context.Context, request *Request) {
-	iter := request.model.GenerateContentStream(ctx, request.filePart, request.textPart)
+	var iter *genai.GenerateContentResponseIterator
+	if request.filePart != nil {
+		iter = request.model.GenerateContentStream(ctx, request.textPart, request.filePart)
+	} else {
+		iter = request.model.GenerateContentStream(ctx, request.textPart)
+
+	}
+	//iter := request.model.GenerateContentStream(ctx, request.textPart, request.filePart)
+	var allparts []genai.Part
 	for {
 		resp, err := iter.Next()
 		if err == iterator.Done {
@@ -156,11 +186,40 @@ func generateAndPrintResponse(ctx context.Context, request *Request) {
 			log.Fatal(err)
 		}
 		printResponse(resp)
+		allparts = append(allparts, resp.Candidates[0].Content.Parts[0])
+
 	}
+
+	printGlamour(allparts)
 }
 
 func printResponse(resp *genai.GenerateContentResponse) {
-	fmt.Print(resp.Candidates[0].Content.Parts[0])
+	result := resp.Candidates[0].Content.Parts[0]
+
+	fmt.Print(result)
+
+}
+
+func printGlamour(resp []genai.Part) {
+	var build strings.Builder
+	for _, p := range resp {
+
+		build.WriteString(fmt.Sprintf("%v", p))
+	}
+	printGlamourString(build.String())
+}
+
+func printGlamourString(theString string) {
+	//result := markdown.Render(theString, 80, 6)
+
+	//result, err := glamour.Render(theString, "./cmd/styles/dark.json")
+	result, err := glamour.Render(theString, "dracula")
+
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println(string(result))
+
 }
 
 // uploads a file to gemini

@@ -11,6 +11,23 @@ References:
 - <https://ai.google.dev/gemini-api/docs/quickstart?lang=go>
 - <https://www.mellekoning.nl/king-julian-can-code/>
 
+### Analyzing git diff with a prompt
+
+The code can now analyze a "git diff" that you can generate from a git repository.
+
+First, generate a file `gitdiff.txt` with a command like this
+
+```bash
+git diff -U10 88217..2042eb ':!vendor' > gitdiff.txt
+```
+
+(the above command should work on this repository)
+
+Explanation: the hashes are examples from two consecutive git hashes found when
+simply doing a "git log" statement. Put the oldest hash first so that added lines get a + and removed lines get a -, or you get it backwards. note that the `-- . ':! vendor'` part is to ignore the vendor folder, as we are only interested in actual updates of changes from the authors of the repository.
+
+When you choose "file" the code will read the "gitdiff.txt" for analyses.
+
 ## Docker-compose ollama and web UI
 
 The idea of the `docker-compose.yaml` file is to have a singular way of starting ollama and openwebui.
