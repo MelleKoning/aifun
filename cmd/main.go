@@ -190,7 +190,24 @@ func generateAndPrintResponse(ctx context.Context, request *Request) {
 
 	}
 
-	printGlamour(allparts)
+	fullString := buildString(allparts)
+
+	printGlamourString(fullString)
+
+	resultfile, err := os.Create("coderevew.md")
+	if err != nil {
+		fmt.Println(err)
+	}
+	defer func() {
+		err := resultfile.Close()
+		log.Println(err)
+	}()
+
+	_, err = resultfile.Write([]byte(fullString))
+	if err != nil {
+		log.Println(err)
+	}
+
 }
 
 func printResponse(resp *genai.GenerateContentResponse) {
@@ -200,13 +217,14 @@ func printResponse(resp *genai.GenerateContentResponse) {
 
 }
 
-func printGlamour(resp []genai.Part) {
+func buildString(resp []genai.Part) string {
 	var build strings.Builder
 	for _, p := range resp {
 
 		build.WriteString(fmt.Sprintf("%v", p))
 	}
-	printGlamourString(build.String())
+
+	return build.String()
 }
 
 func printGlamourString(theString string) {
@@ -218,8 +236,9 @@ func printGlamourString(theString string) {
 	if err != nil {
 		panic(err)
 	}
-	fmt.Println(string(result))
 
+	markdown := string(result)
+	fmt.Println(markdown)
 }
 
 // uploads a file to gemini
