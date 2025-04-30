@@ -28,10 +28,7 @@ const (
 	* [Improvements] Suggest improvements where relevant. Suggestions must be rendered as code, not as diff.
 	* [Friendly advice] Give some friendly advice or heads up where relevant.
 	* [Stop when done] Stop when you are done with the review.
-
-	This is the git diff output between two commits: \n\n {diff}
-
-	AI OUTPUT:`
+`
 )
 
 type Request struct {
@@ -76,7 +73,7 @@ That was the markdown rendering test
 
 	prompt := selectAPrompt()
 	request.model = setupModel(request.client, prompt)
-	request.filePart = addAFile(ctx, request.client)
+	//request.filePart, _ = addAFile(ctx, request.client)
 	interactiveSession(ctx, request)
 }
 
@@ -160,7 +157,17 @@ func interactiveSession(ctx context.Context, request *Request) {
 		}
 
 		if prompt == "file" {
-			request.filePart = addAFile(ctx, request.client)
+			var fileUri string
+			request.filePart, fileUri = addAFile(ctx, request.client)
+
+			commandText := `	* Do not include the provided diff output in the response.
+
+	The file {fileUri} contains a git diff output. This is the git diff output between two commits: {gitdiff.txt}
+	
+	AI OUTPUT:`
+			strings.Replace(commandText, "{fileUri}", fileUri, 1)
+			request.textPart = genai.Text(commandText)
+
 		}
 
 		generateAndPrintResponse(ctx, request)
@@ -242,7 +249,7 @@ func printGlamourString(theString string) {
 }
 
 // uploads a file to gemini
-func addAFile(ctx context.Context, client *genai.Client) genai.Part {
+func addAFile(ctx context.Context, client *genai.Client) (genai.Part, string) {
 	// during the chat, we can continuously update the below file by providing
 	// a different diff. For example to get a diff for a golang repository,
 	// we can issue the following command:
@@ -261,5 +268,5 @@ func addAFile(ctx context.Context, client *genai.Client) genai.Part {
 		panic(err)
 	}
 
-	return genai.FileData{URI: upFile.URI}
+	return genai.FileData{URI: upFile.URI}, upFile.URI
 }
