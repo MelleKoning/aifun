@@ -1,138 +1,78 @@
-```diff
---- a/src/chess/board.cc
-+++ b/src/chess/board.cc
-@@ -975,30 +975,42 @@ void ChessBoard::SetFromFen(const std::string& fen, int* no_capture_ply,
-     } else {
-       throw Exception("Bad fen string: " + fen);
-     }
-     ++col;
-   }
+Okay, I have reviewed the code changes and here's my analysis.
 
-   if (castlings != "-") {
-     for (char c : castlings) {
-       switch (c) {
-         case 'K':
--          castlings_.set_we_can_00();
-+          if (our_king_.as_string() == "e1" && our_pieces_.get(0, 7) &&
-+              rooks_.get(0, 7)) {
-+            castlings_.set_we_can_00();
-+          }
-           break;
-         case 'k':
--          castlings_.set_they_can_00();
-+          if (their_king_.as_string() == "e8" && their_pieces_.get(7, 7) &&
-+              rooks_.get(7, 7)) {
-+            castlings_.set_they_can_00();
-+          }
-           break;
-         case 'Q':
--          castlings_.set_we_can_000();
-+          if (our_king_.as_string() == "e1" && our_pieces_.get(0, 0) &&
-+              rooks_.get(0, 0)) {
-+            castlings_.set_we_can_000();
-+          }
-           break;
-         case 'q':
--          castlings_.set_they_can_000();
-+          if (their_king_.as_string() == "e8" && their_pieces_.get(7, 0) &&
-+              rooks_.get(7, 0)) {
-+            castlings_.set_they_can_000();
-+          }
-           break;
-         default:
-           throw Exception("Bad fen string: " + fen);
-       }
-     }
-   }
-```
+## Description
+The changes refactor the `Network` struct in `pkg/gonn/mlp.go` to decouple it from the storage mechanism. A new file `pkg/gonn/mlp_storage.go` is introduced to handle the loading and saving of the network's weights. The `Network` struct no longer directly handles file I/O. Instead, the `save` and `load` functions in `mlp_storage.go` take a `Network` instance and serialize/deserialize its state. The `Predict` function is also modified to remove the flavour parameter and instead use the flavour that the network was trained with.
 
-[Description]
-The code changes in the `SetFromFen` method relate to setting castling rights based on the FEN string. The original code unconditionally set the castling rights based on the characters 'K', 'k', 'Q', and 'q' in the FEN string. The new code adds checks to ensure that the king and the corresponding rook are in their starting positions before setting the castling rights. Specifically, it checks:
+The `PredictFiles` function has been updated to remove the `flavour` parameter, indicating that the flavour is now stored within the loaded network model.
 
-- For 'K' (white kingside castling): The white king must be on "e1", a white piece and a rook must be on "h1" (0,7).
-- For 'k' (black kingside castling): The black king must be on "e8", a black piece and a rook must be on "h8" (7,7).
-- For 'Q' (white queenside castling): The white king must be on "e1", a white piece and a rook must be on "a1" (0,0).
-- For 'q' (black queenside castling): The black king must be on "e8", a black piece and a rook must be on "a8" (7,0).
+Also the documentation in `docs/README.md` has been updated to reflect the changes in training and predicting a result.
 
-[Obvious errors]
-There are no obvious errors.
+## Obvious errors
+1.  **Error Handling in `mlp_storage.go`:** In several places within the `load` function, an error returned by `fileopen.Read` is printed to standard output using `fmt.Println` but not properly handled. The function should return the error so that the caller can handle it appropriately.
+2.  **Incomplete removal of model files**: The old code had two model files, but the new code only uses one model file. The `removemodel` function should remove the second model file too.
+3.  **Missing error handling in `save`**: The `save` function in `mlp_storage.go` does not handle the error returned by `binary.Write` when writing the training flavour of the network.
 
-[Improvements]
+## Improvements
+1.  **Consistent Error Handling:** Ensure that all errors returned by file operations (e.g., `os.Open`, `os.Create`, `file.Read`, `file.Write`) and binary operations (e.g., `binary.Read`, `binary.Write`) are properly handled. This typically involves logging the error and returning it so that the calling function can take appropriate action.
+    ```go
+    // in mlp_storage.go
+    err = binary.Write(filecreate, binary.LittleEndian, int64(net.flavour))
+    if err != nil {
+        log.WithError(err).Errorf("error writing training flavour of network")
+        return
+    }
+    ```
+2.  **Consider using a dedicated configuration struct:** Instead of passing individual parameters like `input`, `hidden`, `output`, and `rate` to `CreateNetwork`, consider using a dedicated configuration struct. This can improve code readability and make it easier to add or modify configuration options in the future.
 
-1.  **Readability**: The conditions for castling can be made more readable by extracting them into named boolean variables.
+    ```go
+    type NetworkConfig struct {
+        Input int
+        Hidden int
+        Output int
+        Rate float64
+        Flavour imgproc.ImageAsBytesFlavour
+    }
 
-```c++
-         case 'K': {
-+          bool king_on_e1 = our_king_.as_string() == "e1";
-+          bool rook_on_h1 = our_pieces_.get(0, 7) && rooks_.get(0, 7);
-+          if (king_on_e1 && rook_on_h1) {
-+            castlings_.set_we_can_00();
-+          }
-+          break;
-+        }
-+        case 'k': {
-+          bool king_on_e8 = their_king_.as_string() == "e8";
-+          bool rook_on_h8 = their_pieces_.get(7, 7) && rooks_.get(7, 7);
-+          if (king_on_e8 && rook_on_h8) {
-+            castlings_.set_they_can_00();
-+          }
-+          break;
-+        }
-+        case 'Q': {
-+          bool king_on_e1 = our_king_.as_string() == "e1";
-+          bool rook_on_a1 = our_pieces_.get(0, 0) && rooks_.get(0, 0);
-+          if (king_on_e1 && rook_on_a1) {
-+            castlings_.set_we_can_000();
-+          }
-+          break;
-+        }
-+        case 'q': {
-+          bool king_on_e8 = their_king_.as_string() == "e8";
-+          bool rook_on_a8 = their_pieces_.get(7, 0) && rooks_.get(7, 0);
-+          if (king_on_e8 && rook_on_a8) {
-+            castlings_.set_they_can_000();
-+          }
-+          break;
-+        }
-```
+    func CreateNetwork(config NetworkConfig) *Network {
+        net := &Network{
+            inputs:       config.Input,
+            hiddens:      config.Hidden,
+            outputs:      config.Output,
+            learningRate: config.Rate,
+        }
+        // ... rest of the code ...
+    }
+    ```
+3.  **Make NetworkStorage private:** The `NetworkStorage` struct is only used internally by the `mlp_storage` package. Therefore, it should be made private by renaming it to `networkStorage`.
+4.  **Rename pathfileNameInputToHiddenWeights**: The function `pathfileNameInputToHiddenWeights` is missleading. It is the path to the network file, not only the hidden weights. Rename the function to `pathfileNameNetwork`
+    ```go
+    func (net *Network) pathfileNameNetwork() string {
+    	return filepath.Join(net.modelStorageFolder, "network.model")
+    }
+    ```
+    Update the calls to that function as well.
+5.  **Make flavour configurable**: The flavour should be configurable at creation time of the network.
+    ```go
+    func CreateNetwork(input, hidden, output int, rate float64, flavour imgproc.ImageAsBytesFlavour) *Network {
+    	net := &Network{
+    		inputs:       input,
+    		hiddens:      hidden,
+    		outputs:      output,
+    		learningRate: rate,
+    		flavour:      flavour,
+    	}
+    ```
+    and update the creation in `GoSimpleAI`
+    ```go
+    net := CreateNetwork(inputNodes, hiddenNodes, outputNodes, learningrate, action.Flavour)
+    ```
+6.  **Training and prediction should depend on the flavour**: The predict and train function now have a dependency on the flavour. This parameter should be part of the `Network` struct and set during creation.
 
-2.  **Duplication**: The code repeats the pattern of checking king position and rook presence for each castling right. This duplication can be reduced by creating a helper function.
+## Friendly advice
+*   The refactoring seems to be on the right track towards separating the network model from the storage mechanism. Keep an eye on error handling and ensure that all potential errors are gracefully handled.
+*   Consider adding unit tests for the storage-related functions to ensure that the network can be saved and loaded correctly.
+*   Think about adding versioning to the stored network data. This can be useful if you later change the network structure or serialization format.
+*   The AI model is persisted in a file on disk. Ensure that the directory `net.modelStorageFolder` exists, or create it if not.
 
-```c++
- bool CanCastle(bool is_white, bool kingside, const BoardSquare& king_pos,
-                 const Bitboard& pieces, const Bitboard& rooks) {
-  std::string expected_king_pos = is_white ? "e1" : "e8";
-  int rook_row = is_white ? 0 : 7;
-  int rook_col = kingside ? 7 : 0;
-
-
-  return king_pos.as_string() == expected_king_pos && pieces.get(rook_row, rook_col) &&
-         rooks.get(rook_row, rook_col);
- }
-
-
- // Then, in the switch statement:
- case 'K':
-  if (CanCastle(true, true, our_king_, our_pieces_, rooks_)) {
-  castlings_.set_we_can_00();
-  }
-  break;
- case 'k':
-  if (CanCastle(false, true, their_king_, their_pieces_, rooks_)) {
-  castlings_.set_they_can_00();
-  }
-  break;
- case 'Q':
-  if (CanCastle(true, false, our_king_, our_pieces_, rooks_)) {
-  castlings_.set_we_can_000();
-  }
-  break;
- case 'q':
-  if (CanCastle(false, false, their_king_, their_pieces_, rooks_)) {
-  castlings_.set_they_can_000();
-  }
-  break;
-```
-
-[Friendly advice]
-The added checks are a good step to ensure that castling rights are set correctly based on the board state. The suggestions above are aimed at improving code readability and reducing code duplication. Keep up the good work!
+## Stop when done
+I am done with the review.

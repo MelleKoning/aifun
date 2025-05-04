@@ -163,7 +163,7 @@ func interactiveSession(ctx context.Context, request *Request) {
 			commandText := `	* Do not include the provided diff output in the response.
 
 	The file {fileUri} contains a git diff output. This is the git diff output between two commits: {gitdiff.txt}
-	
+
 	AI OUTPUT:`
 			strings.Replace(commandText, "{fileUri}", fileUri, 1)
 			request.textPart = genai.Text(commandText)
