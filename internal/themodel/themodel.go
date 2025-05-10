@@ -7,11 +7,15 @@ import (
 	"os"
 	"strings"
 
+	// NOTE: google announced end of live for the
+	// used generative-ai-go library. The successor
+	// of this api is implemented in the genaiterface
+	// package
+	"github.com/MelleKoning/aifun/internal/fileio"
+	"github.com/MelleKoning/aifun/internal/terminal"
 	"github.com/google/generative-ai-go/genai"
 	"google.golang.org/api/iterator"
 	"google.golang.org/api/option"
-
-	glamour "github.com/charmbracelet/glamour"
 )
 
 const (
@@ -126,22 +130,9 @@ func (m *theModel) generateAndPrintResponse(ctx context.Context) {
 
 	fullString := buildString(allparts)
 
-	printGlamourString(fullString)
+	terminal.PrintGlamourString(fullString)
 
-	resultfile, err := os.Create("coderevew.md")
-	if err != nil {
-		fmt.Println(err)
-	}
-	defer func() {
-		err := resultfile.Close()
-		log.Println(err)
-	}()
-
-	_, err = resultfile.Write([]byte(fullString))
-	if err != nil {
-		log.Println(err)
-	}
-
+	fileio.WriteMarkdown(fullString, "codereview.md")
 }
 
 func printResponse(resp *genai.GenerateContentResponse) {
@@ -159,18 +150,4 @@ func buildString(resp []genai.Part) string {
 	}
 
 	return build.String()
-}
-
-func printGlamourString(theString string) {
-	//result := markdown.Render(theString, 80, 6)
-
-	//result, err := glamour.Render(theString, "./cmd/styles/dark.json")
-	result, err := glamour.Render(theString, "dracula")
-
-	if err != nil {
-		panic(err)
-	}
-
-	markdown := string(result)
-	fmt.Println(markdown)
 }

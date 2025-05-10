@@ -27,3 +27,5 @@ go.work.sum
 # codo subfolder
 /.qodo
 .qodo
+gitdiff.txt
+codereview.md

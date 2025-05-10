@@ -8,11 +8,10 @@ import (
 	"os"
 	"strings"
 
+	"github.com/MelleKoning/aifun/internal/terminal"
 	"github.com/google/generative-ai-go/genai"
 	"google.golang.org/api/iterator"
 	"google.golang.org/api/option"
-
-	glamour "github.com/charmbracelet/glamour"
 )
 
 const (
@@ -39,7 +38,7 @@ type Request struct {
 }
 
 func main() {
-	printGlamourString(`
+	terminal.PrintGlamourString(`
 # Welcome to aifun!
 
 You first have to choose a prompt.
@@ -92,13 +91,13 @@ func selectAPrompt() string {
 	}
 
 	// Display the list of prompts
-	printGlamourString("Select a prompt by entering the corresponding number:")
+	terminal.PrintGlamourString("Select a prompt by entering the corresponding number:")
 	for i, prompt := range prompts {
-		printGlamourString(fmt.Sprintf("%d. %s\n", i+1, prompt))
+		terminal.PrintGlamourString(fmt.Sprintf("%d. %s\n", i+1, prompt))
 	}
 
 	// Read the user's selection
-	printGlamourString("Enter your choice: ")
+	terminal.PrintGlamourString("Enter your choice: ")
 	choiceStr, err := reader.ReadString('\n')
 	if err != nil {
 		fmt.Println("Error reading input:", err)
@@ -121,7 +120,7 @@ func selectAPrompt() string {
 
 	// Use the selected prompt
 	selectedPrompt := prompts[choice-1]
-	printGlamourString(fmt.Sprintf("You selected: %s\n", selectedPrompt))
+	terminal.PrintGlamourString(fmt.Sprintf("You selected: %s\n", selectedPrompt))
 
 	return prompts[choice-1]
 }
@@ -165,7 +164,7 @@ func interactiveSession(ctx context.Context, request *Request) {
 	The file {fileUri} contains a git diff output. This is the git diff output between two commits: {gitdiff.txt}
 
 	AI OUTPUT:`
-			strings.Replace(commandText, "{fileUri}", fileUri, 1)
+			commandText = strings.Replace(commandText, "{fileUri}", fileUri, 1)
 			request.textPart = genai.Text(commandText)
 
 		}
@@ -199,9 +198,9 @@ func generateAndPrintResponse(ctx context.Context, request *Request) {
 
 	fullString := buildString(allparts)
 
-	printGlamourString(fullString)
+	terminal.PrintGlamourString(fullString)
 
-	resultfile, err := os.Create("coderevew.md")
+	resultfile, err := os.Create("codereview.md")
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -232,20 +231,6 @@ func buildString(resp []genai.Part) string {
 	}
 
 	return build.String()
-}
-
-func printGlamourString(theString string) {
-	//result := markdown.Render(theString, 80, 6)
-
-	//result, err := glamour.Render(theString, "./cmd/styles/dark.json")
-	result, err := glamour.Render(theString, "dracula")
-
-	if err != nil {
-		panic(err)
-	}
-
-	markdown := string(result)
-	fmt.Println(markdown)
 }
 
 // uploads a file to gemini
