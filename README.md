@@ -1,14 +1,15 @@
 # aifun
 
-The code repository aifun is to play around with several AI thingies. The `/cmd` contains some GoLang code to run against a cloud model, and the `docker-compose.yml` is to run certain models locally.
+The code repository aifun is to play around with several AI thingies. The `/cmd` contains some GoLang code to run against a cloud model, and the `docker-compose.yml` is to run certain models locally using Meta's Ollama.
 
 ## Concept of accessing a model via an API
 
-The code in `/cmd` is aimed for a quick trial on getting access to a model in the cloud. The code should be self explanatory.
+The code folders in `/cmd` are aimed for a quick trial on getting access to a google Gemini model in the cloud. The code should be self explanatory.
 
 References:
 
 - <https://ai.google.dev/gemini-api/docs/quickstart?lang=go>
+- <https://ai.google.dev/gemini-api/docs/text-generation>
 - <https://www.mellekoning.nl/king-julian-can-code/>
 
 ### Analyzing git diff with a prompt
@@ -26,7 +27,18 @@ git diff -U10 88217..2042eb ':!vendor' > gitdiff.txt
 Explanation: the hashes are examples from two consecutive git hashes found when
 simply doing a "git log" statement. Put the oldest hash first so that added lines get a + and removed lines get a -, or you get it backwards. note that the `-- . ':! vendor'` part is to ignore the vendor folder, as we are only interested in actual updates of changes from the authors of the repository.
 
-When you choose "file" the code will read the "gitdiff.txt" for analyses.
+Note that if you are on a branch and want to get changes from your latest commit to the branch with master, use:
+
+```bash
+git diff -U10 master..HEAD -- . ':!vendor' > gitdiff.txt
+```
+
+Run the gitdiff tool
+
+> go run ./cmd/diffreviewer/main.go
+
+You will be presented with a choice for a systemPrompt. You can start a chat, but the goal is to type "file".
+When you type "file" the code will read the "gitdiff.txt" for analyses, call the cloud API and show suggestions for the diff.
 
 ## Docker-compose ollama and web UI
 

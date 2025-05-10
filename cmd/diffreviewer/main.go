@@ -6,43 +6,36 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strings"
 
-	"github.com/MelleKoning/aifun/internal/themodel"
-
-	glamour "github.com/charmbracelet/glamour"
+	"github.com/MelleKoning/aifun/internal/genainterface"
+	"github.com/MelleKoning/aifun/internal/prompts"
+	"github.com/MelleKoning/aifun/internal/terminal"
 )
 
 func main() {
-	printGlamourString(`
-# Welcome to aifun!
+	terminal.PrintGlamourString(`
+# Welcome to diffreviewer - genai!
 
-> This is a quote
+Select a prompt to use for judging the gitdiff.txt
 
-This is some rendered code:
+> Note: this uses the successor of generative-ai-go which is "google.golang.org/genai"
 
 ~~~golang
 func main() {
-   fmt.Println("hello")
+   fmt.Println("Hello world, rendertest")
 }
 ~~~
-
-That was the markdown rendering test
 	`)
 
 	ctx := context.Background()
 	var err error
 
 	systemInstruction := selectAPrompt()
-	modelAction, err := themodel.NewModel(ctx, systemInstruction)
+	modelAction, err := genainterface.NewModel(ctx, systemInstruction)
 	if err != nil {
 		log.Fatalf("Error creating client: %v", err)
 	}
-	defer func() {
-		err := modelAction.CloseClient()
-		if err != nil {
-			fmt.Println(err)
-		}
-	}()
 
 	//request.filePart, _ = addAFile(ctx, request.client)
 	interactiveSession(ctx, modelAction)
@@ -52,203 +45,19 @@ func selectAPrompt() string {
 	reader := bufio.NewReader(os.Stdin)
 
 	// Define a list of prompts
-	prompts := []struct {
-		name   string
-		prompt string
-	}{
-		{name: "gitreview prompt",
-			prompt: `You are an expert developer and git super user. You do code reviews based on the git diff output between two commits.
-	* The diff contains a few unchanged lines of code. Focus on the code that changed. Changed are added and removed lines.
-	* The added lines start with a "+" and the removed lines that start with a "-"
-	Complete the following tasks, and be extremely critical and precise in your review:
-	* [Description] Describe the code change.
-	* [Obvious errors] Look for obvious errors in the code and suggest how to fix.
-	* [Improvements] Suggest improvements where relevant. Suggestions must be rendered as code, not as diff.
-	* [Friendly advice] Give some friendly advice or heads up where relevant.
-	* [Stop when done] Stop when you are done with the review.
-`},
-		{
-
-			name: "gitreview prompt 2",
-			prompt: `Please perform a thorough code review of the following git diff. Your review should address the following top 6 tasks:
-**Task 1:  Correctness and Error Handling**
-
-* Analyze for logical errors, bugs, and regressions.
-* Evaluate handling of edge cases and error conditions.
-* Confirm alignment with described purpose/context.
-
-**Task 2:  Code Quality and Readability**
-
-* Assess clarity, simplicity, and understandability.
-* Evaluate naming (variables, functions, classes).
-* Check for necessary and clear comments.
-* Identify redundant/unnecessary code.
-* Note any stylistic inconsistencies *within the diff*.
-
-**Task 3:  Object-Oriented Principles (where applicable)**
-
-* Evaluate appropriate use of classes, objects, and methods.
-* Identify any violations of OO principles (e.g., single responsibility, open/closed principle, etc.).
-* Suggest refactoring towards a more OO design if procedural code is present where OO is more suitable.
-
-**Task 4:  Clean Code Practices**
-
-* Apply clean code principles (e.g., keep functions small, do one thing, use descriptive names).
-* Assess for code duplication and suggest DRY (Don't Repeat Yourself) principle.
-* Evaluate for KISS (Keep It Simple, Stupid) principle.
-
-**Task 5:  Performance and Security**
-
-* Analyze potential performance bottlenecks.
-* Identify potential security vulnerabilities *within the diff*.
-
-**Task 6:  Testability and Test Implications**
-
-* Assess the impact of changes on testability.
-* Determine the need for new/modified tests.
-
-**To aid this review, please provide the following contextual information:**
-
-* **Brief description of the purpose and context of these changes:**
-* **Relevant background information or related issues:**
-* **Any specific areas you would like the reviewer to pay particular attention to:**
-
-Provide feedback organized by task, referencing specific lines. Explain your reasoning for each issue and suggestion.`,
-		},
-		{
-			name: "gitreview actionable prompt",
-			prompt: `Please perform a focused code review of the following git diff, providing specific examples and line references. Address the top 2 tasks in each category:
-
-**Context:**
-
-* Brief description of the purpose and context of these changes:
-* Relevant background information or related issues:
-* Any specific areas you would like the reviewer to pay particular attention to:
-
-**Review Tasks:**
-
-**1. Correctness & Logic:**
-
-* 1.  Identify potential logical errors or bugs introduced in the diff.
-* 2.  Analyze the handling of specific edge cases or error conditions modified by the diff.
-
-**2. Readability & Style:**
-
-* 1.  Assess if the diff makes the code clearer or more confusing (provide specific examples of improved or worsened clarity).
-* 2.  Evaluate the naming of new variables/functions in the diff for descriptiveness and consistency.
-
-**3. OO Principles & Design:**
-
-* 1.  Identify any changes in the diff that violate basic OO principles (e.g., a method doing too much, tight coupling).
-* 2.  If the diff introduces procedural code, suggest *specific* refactoring steps within the scope of the diff to improve OO design.
-
-**4. Clean Code:**
-
-* 1.  Point out any code duplication introduced or not addressed by the diff.
-* 2.  Assess if new functions/methods in the diff adhere to the "single responsibility principle".
-
-**5. Performance & Security:**
-
-* 1.  Identify any *obvious* performance regressions introduced by the diff (e.g., inefficient loops, excessive object creation).
-* 2.  Flag any *clear* security vulnerabilities added in the diff (e.g., lack of input validation).
-
-**6. Testing:**
-
-* 1.  Determine if the changes in the diff clearly require new or modified unit tests.
-* 2.  Note any existing tests modified or removed by the diff and assess their relevance.
-
-Provide your review organized by category, with detailed explanations, line references, and code examples to illustrate issues and suggestions.
-			`,
-		},
-		{
-			name: "concise prompt 4",
-			prompt: `Please provide a code optimization-focused review of the following git diff. Provide "before" and "after" code snippets to illustrate each suggestion.
-
-**Context:**
-
-* Brief description of the purpose and context of these changes:
-* Relevant background information:
-
-**Optimization Targets (Focus your review on these):**
-
-* Performance
-* Code Duplication
-* Maintainability
-
-**Review Tasks:**
-
-1.  **Performance Optimization:**
-    * Identify any changes that introduce performance regressions or limit potential optimizations.
-    * Suggest code-level optimizations to improve performance (provide "before" and "after" code).
-
-2.  **Code Duplication & Maintainability:**
-    * Find any code duplication introduced or opportunities to reduce existing duplication for better maintainability.
-    * Suggest refactoring steps (with code examples) to apply the DRY principle.
-
-3.  **Optimization-Enabling Refactoring:**
-    * Identify sections of code that, if refactored, would open up further optimization possibilities.
-    * Provide refactoring suggestions (with code examples) that set the stage for future optimizations.
-
-4.  **Testability Impact:**
-    * Assess if the changes make the code harder or easier to test.
-    * Suggest optimizations that also improve testability.
-
-Provide detailed explanations for each optimization suggestion, with "before" and "after" code snippets.
-`,
-		},
-		{
-			name: "diff refactoring focus",
-			prompt: `Please provide a refactoring-focused review of the following git diff, with detailed "before" and "after" code examples *within the scope of the diff*.
-
-**Context:**
-
-* Brief description of the purpose and context of these changes:
-* Relevant background information:
-
-**Important:** Remember that you are reviewing a *diff*. "Before" code should represent the original code *as shown in the diff* (the "-" lines), and "after" code should represent the changed code *as shown in the diff* (the "+" lines), incorporating refactoring suggestions.
-
-**Refactoring Goals:**
-
-* Smaller, Single-Responsibility Functions
-* Enhanced Object-Oriented Design
-
-**Review Tasks:**
-
-1.  **Function Size within the Diff:**
-
-    * Identify functions *modified or introduced in the diff* that become too large or complex *after the changes*.
-    * Provide refactoring suggestions with "before" and "after" code examples (from the diff) to break down these functions.
-
-2.  **OO Opportunities in the Changed Code:**
-
-    * Analyze the *changes in the diff* for opportunities to introduce new classes or objects to better encapsulate data and behavior *within the scope of the diff*.
-    * If the *diff introduces* procedural code patterns, suggest refactoring steps (with code examples from the diff) to shift towards an object-oriented approach.
-
-3.  **Function Naming in the Diff:**
-
-    * Evaluate the naming of functions *modified or added in the diff*.
-    * Suggest refactoring examples *within the diff* to improve function names for brevity and clarity, especially if made possible by Task 1.
-
-4.  **Code Organization Changes for OO:**
-
-    * Assess if the *diff* introduces code that could be better organized within existing or new classes *within the scope of the diff*.
-    * Provide refactoring suggestions with code examples (from the diff) to achieve better code organization and encapsulation.
-
-Provide detailed explanations for each refactoring suggestion, with clear "before" and "after" code snippets *from the diff*.
-
-`,
-		},
-	}
+	prompts := prompts.PromptList
 
 	// Display the list of prompts
-	printGlamourString("Select a prompt by entering the corresponding number:")
+	terminal.PrintGlamourString("Select a prompt by entering the corresponding number:")
 
+	var promptStrings strings.Builder
 	for title, prompt := range prompts {
-		printGlamourString(fmt.Sprintf("%d. %s", title+1, prompt.name))
+		promptStrings.WriteString(fmt.Sprintf("%d. %s\n", title+1, prompt.Name))
 	}
+	terminal.PrintGlamourString(promptStrings.String())
 
 	// Read the user's selection
-	printGlamourString("Enter your choice: ")
+	fmt.Print("Enter your choice: ")
 	choiceStr, err := reader.ReadString('\n')
 	if err != nil {
 		fmt.Println("Error reading input:", err)
@@ -270,13 +79,13 @@ Provide detailed explanations for each refactoring suggestion, with clear "befor
 	}
 
 	// Use the selected prompt
-	selectedPrompt := prompts[choice-1].prompt
-	printGlamourString(fmt.Sprintf("You selected: %s\n", selectedPrompt))
+	selectedPrompt := prompts[choice-1].Prompt
+	terminal.PrintGlamourString(fmt.Sprintf("You selected: %s\n", selectedPrompt))
 
 	return selectedPrompt
 }
 
-func interactiveSession(ctx context.Context, modelAction themodel.Action) {
+func interactiveSession(ctx context.Context, modelAction genainterface.Action) {
 	reader := bufio.NewReader(os.Stdin)
 	for {
 		fmt.Print("('exit' to quit, `file` to upload): ")
@@ -293,25 +102,13 @@ func interactiveSession(ctx context.Context, modelAction themodel.Action) {
 		}
 
 		if prompt == "file" {
-			modelAction.ReviewFile()
-
+			err := modelAction.ReviewFile()
+			if err != nil {
+				fmt.Println(err)
+			}
 			continue
 		}
 
 		modelAction.ChatMessage(prompt)
 	}
-}
-
-func printGlamourString(theString string) {
-	//result := markdown.Render(theString, 80, 6)
-
-	//result, err := glamour.Render(theString, "./cmd/styles/dark.json")
-	result, err := glamour.Render(theString, "dracula")
-
-	if err != nil {
-		panic(err)
-	}
-
-	markdown := string(result)
-	fmt.Println(markdown)
 }
