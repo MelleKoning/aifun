@@ -59,7 +59,7 @@ func (m *theModel) ChatMessage(userPrompt string) {
 	// Create chat with history
 	chat, err := m.client.Chats.Create(ctx, modelName, nil, m.chatHistory)
 	if err != nil {
-		log.Println("Error creating chat:", err)
+		fmt.Println("Error creating chat:", err)
 		return
 	}
 
@@ -70,13 +70,12 @@ func (m *theModel) ChatMessage(userPrompt string) {
 
 	for chunk, err := range stream {
 		if err != nil {
-			log.Println("Error receiving stream:", err)
+			fmt.Println("Error receiving stream:", err)
 			break
 		}
 		part := chunk.Candidates[0].Content.Parts[0]
 		printResponse(chunk)
 		allModelParts = append(allModelParts, part)
-
 	}
 
 	// output model answer to console
@@ -179,8 +178,11 @@ func addAFile(ctx context.Context, client *genai.Client) (*genai.Part, string) {
 func printResponse(resp *genai.GenerateContentResponse) {
 	result := resp.Candidates[0].Content.Parts[0]
 
-	fmt.Print(result)
-
+	if result != nil {
+		fmt.Print(".")
+	} else {
+		fmt.Print("-")
+	}
 }
 
 func buildString(resp []*genai.Part) string {

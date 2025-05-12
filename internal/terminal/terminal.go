@@ -11,11 +11,10 @@ func PrintGlamourString(theString string) {
 
 	//result, err := glamour.Render(theString, "./cmd/styles/dark.json")
 	result, err := glamour.Render(theString, "dracula")
-
 	if err != nil {
 		panic(err)
 	}
 
 	markdown := string(result)
-	fmt.Println(markdown)
+	fmt.Print(markdown)
 }

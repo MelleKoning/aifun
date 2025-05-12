@@ -8,6 +8,8 @@ import (
 	"os"
 	"strings"
 
+	"github.com/chzyer/readline"
+
 	"github.com/MelleKoning/aifun/internal/genainterface"
 	"github.com/MelleKoning/aifun/internal/prompts"
 	"github.com/MelleKoning/aifun/internal/terminal"
@@ -86,16 +88,37 @@ func selectAPrompt() string {
 }
 
 func interactiveSession(ctx context.Context, modelAction genainterface.Action) {
-	reader := bufio.NewReader(os.Stdin)
+	// Define ANSI escape codes for the desired color (e.g., green)
+	const colorGreen = "\033[32m"
+	const colorReset = "\033[0m"
+	//const colorYellow = "\033[33m"
+	const backGroundBlack = "\033[40m"
+	//const AttrReversed = "\033[7m"
+	const colorCyan = "\033[36m"
+
+	rl, err := readline.New(">")
+	if err != nil {
+		log.Fatalf("Error initializing readline: %v", err)
+	}
+	defer func() {
+		err := rl.Close()
+		if err != nil {
+			fmt.Print(err)
+		}
+	}()
+
 	for {
-		fmt.Print("('exit' to quit, `file` to upload): ")
-		prompt, err := reader.ReadString('\n')
+		// Set the prompt with the color codes
+		fmt.Print(colorGreen + "('exit' to quit, `file` to upload) ")
+		fmt.Println(colorCyan + backGroundBlack)
+
+		prompt, err := rl.Readline()
 		if err != nil {
 			fmt.Println("Error reading input:", err)
 			continue
 		}
-		// Trim the newline character from the input
-		prompt = prompt[:len(prompt)-1]
+		fmt.Print(colorReset)
+
 		if prompt == "exit" {
 			fmt.Println("Exiting...")
 			break
