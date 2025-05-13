@@ -82,7 +82,12 @@ func selectAPrompt() string {
 
 	// Use the selected prompt
 	selectedPrompt := prompts[choice-1].Prompt
-	terminal.PrintGlamourString(fmt.Sprintf("You selected: %s\n", selectedPrompt))
+	fmt.Println("You selected:")
+	terminal.PrintGlamourString(fmt.Sprintf(`%s
+	===========
+	The above prompt will be used as instruction when
+	you upload the gitdiff.txt by typing "file".
+	`, selectedPrompt))
 
 	return selectedPrompt
 }
@@ -109,7 +114,7 @@ func interactiveSession(ctx context.Context, modelAction genainterface.Action) {
 
 	for {
 		// Set the prompt with the color codes
-		fmt.Print(colorGreen + "('exit' to quit, `file` to upload) ")
+		fmt.Print(colorGreen + "('exit' to quit, `file` to upload, `prompt` to update systeminstruction) ")
 		fmt.Println(colorCyan + backGroundBlack)
 
 		prompt, err := rl.Readline()
@@ -129,6 +134,17 @@ func interactiveSession(ctx context.Context, modelAction genainterface.Action) {
 			if err != nil {
 				fmt.Println(err)
 			}
+
+			// ReviewFile is already sending off
+			// the call to the cloud, so return to for loop
+			continue
+		}
+
+		if prompt == "prompt" {
+			selectedPrompt := selectAPrompt()
+			modelAction.UpdateSystemInstruction(selectedPrompt)
+			// new prompt will be used in the "file" instruction when
+			// uploading a diff
 			continue
 		}
 

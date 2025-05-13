@@ -8,18 +8,25 @@ type Prompt struct {
 var PromptList = []Prompt{
 	{Name: "gitreview prompt",
 		Prompt: `You are an expert developer and git super user. You do code reviews based on the git diff output between two commits.
+
 	* The diff contains a few unchanged lines of code. Focus on the code that changed. Changed are added and removed lines.
+
 	* The added lines start with a "+" and the removed lines that start with a "-"
 	Complete the following tasks, and be extremely critical and precise in your review:
+
 	* [Description] Describe the code change.
+
 	* [Obvious errors] Look for obvious errors in the code and suggest how to fix.
+
 	* [Improvements] Suggest improvements where relevant. Suggestions must be rendered as code, not as diff.
+
 	* [Friendly advice] Give some friendly advice or heads up where relevant.
+
 	* [Stop when done] Stop when you are done with the review.
 `},
 	{
 
-		Name: "gitreview prompt 2 - says linenumbers",
+		Name: "gitreview prompt - only top 2",
 		Prompt: `Please perform a thorough code review of the following git diff. Your review should address the following top 6 tasks:
 **Task 1:  Correctness and Error Handling**
 
@@ -57,17 +64,14 @@ var PromptList = []Prompt{
 * Assess the impact of changes on testability.
 * Determine the need for new/modified tests.
 
-**To aid this review, please provide the following contextual information:**
+Provide feedback organized by task, referencing specific lines. Explain your reasoning for each issue and suggestion.
 
-* **Brief description of the purpose and context of these changes:**
-* **Relevant background information or related issues:**
-* **Any specific areas you would like the reviewer to pay particular attention to:**
-
-Provide feedback organized by task, referencing specific lines. Explain your reasoning for each issue and suggestion.`,
+Before answering take the top 2 suggestions as response. Do not respond more than 2 suggestions.
+`,
 	},
 	{
-		Name: "gitreview actionable prompt - line references",
-		Prompt: `Please perform a focused code review of the following git diff, providing specific examples and line references. Address the top 2 tasks in each category:
+		Name: "gitreview actionable prompt - Address top 2 tasks in each category",
+		Prompt: `Please perform a focused code review of the following git diff, providing specific examples  Address the top 2 tasks in each category:
 
 **Context:**
 
@@ -107,11 +111,11 @@ Provide feedback organized by task, referencing specific lines. Explain your rea
 * 1.  Determine if the changes in the diff clearly require new or modified unit tests.
 * 2.  Note any existing tests modified or removed by the diff and assess their relevance.
 
-Provide your review organized by category, with detailed explanations, line references, and code examples to illustrate issues and suggestions.
+Provide your review organized by category, with detailed code examples, to illustrate issues and suggestions.
 			`,
 	},
 	{
-		Name: "concise prompt - code optimization focused",
+		Name: "concise prompt - code optimization focused - before and after changes",
 		Prompt: `Please provide a code optimization-focused review of the following git diff. Provide "before" and "after" code snippets to illustrate each suggestion.
 
 **Context:**

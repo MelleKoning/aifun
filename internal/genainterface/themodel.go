@@ -28,6 +28,7 @@ type theModel struct {
 type Action interface {
 	ReviewFile() error
 	ChatMessage(string)
+	UpdateSystemInstruction(string)
 }
 
 // NewModel sets up the client for communication with Gemini. Ensure
@@ -48,6 +49,10 @@ func NewModel(ctx context.Context, systemInstruction string) (Action, error) {
 		systemInstruction: systemInstruction,
 		client:            genaiclient,
 	}, err
+}
+
+func (m *theModel) UpdateSystemInstruction(systemInstruction string) {
+	m.systemInstruction = systemInstruction
 }
 
 func (m *theModel) ChatMessage(userPrompt string) {

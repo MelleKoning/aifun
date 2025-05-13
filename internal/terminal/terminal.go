@@ -9,8 +9,12 @@ import (
 func PrintGlamourString(theString string) {
 	//result := markdown.Render(theString, 80, 6)
 
-	//result, err := glamour.Render(theString, "./cmd/styles/dark.json")
-	result, err := glamour.Render(theString, "dracula")
+	glamour.WithWordWrap(120)
+	termRenderer, err := glamour.NewTermRenderer(glamour.WithWordWrap(120), glamour.WithStandardStyle("dracula"))
+	if err != nil {
+		fmt.Println("can not initialize termRenderer")
+	}
+	result, err := termRenderer.Render(theString)
 	if err != nil {
 		panic(err)
 	}
