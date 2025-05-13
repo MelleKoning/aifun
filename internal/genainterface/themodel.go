@@ -29,6 +29,7 @@ type Action interface {
 	ReviewFile() error
 	ChatMessage(string)
 	UpdateSystemInstruction(string)
+	GetHistoryLength() int
 }
 
 // NewModel sets up the client for communication with Gemini. Ensure
@@ -51,6 +52,9 @@ func NewModel(ctx context.Context, systemInstruction string) (Action, error) {
 	}, err
 }
 
+func (m *theModel) GetHistoryLength() int {
+	return len(m.chatHistory)
+}
 func (m *theModel) UpdateSystemInstruction(systemInstruction string) {
 	m.systemInstruction = systemInstruction
 }
@@ -93,15 +97,23 @@ func (m *theModel) ChatMessage(userPrompt string) {
 }
 
 func (m *theModel) ReviewFile() error {
-	filePart, fileUri := addAFile(context.Background(), m.client)
+	filePart, fileUri := m.addAFile(context.Background(), m.client)
 	log.Printf("fileUri is %s", fileUri)
 
+	// Start with chatHistory
+	genaiContents := append([]*genai.Content{}, m.chatHistory...)
+
+	// we first create a Part for file,
+	// later we add an additional part
+	// to this slice to add the Command below
 	parts := []*genai.Part{
 		filePart,
 	}
-	genaiContents := []*genai.Content{
-		genai.NewContentFromParts(parts, genai.RoleUser),
-	}
+
+	fileContent := genai.NewContentFromParts(parts, genai.RoleUser)
+
+	// Include fileContent
+	genaiContents = append(genaiContents, fileContent)
 
 	config := &genai.GenerateContentConfig{
 		SystemInstruction: genai.NewContentFromText(m.systemInstruction, genai.RoleModel),
@@ -114,9 +126,11 @@ func (m *theModel) ReviewFile() error {
 		AI OUTPUT:`
 	commandText = strings.Replace(commandText, "{fileUri}", fileUri, 1)
 
-	// add as additional part
+	// add command as additional part
+	// to the last item in the genaiContents
 	genaiCommandPart := &genai.Part{Text: commandText}
-	genaiContents[0].Parts = append(genaiContents[0].Parts, genaiCommandPart)
+	lastContentPart := len(genaiContents) - 1
+	genaiContents[lastContentPart].Parts = append(genaiContents[lastContentPart].Parts, genaiCommandPart)
 
 	// add the command text to the file contents
 	//genaiCommandText := genai.Text(commandText)
@@ -156,7 +170,7 @@ func (m *theModel) ReviewFile() error {
 }
 
 // uploads a file to gemini
-func addAFile(ctx context.Context, client *genai.Client) (*genai.Part, string) {
+func (m *theModel) addAFile(ctx context.Context, client *genai.Client) (*genai.Part, string) {
 	// during the chat, we can continuously update the below file by providing
 	// a different diff. For example to get a diff for a golang repository,
 	// we can issue the following command:

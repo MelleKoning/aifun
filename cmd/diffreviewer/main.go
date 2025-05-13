@@ -93,13 +93,6 @@ func selectAPrompt() string {
 }
 
 func interactiveSession(ctx context.Context, modelAction genainterface.Action) {
-	// Define ANSI escape codes for the desired color (e.g., green)
-	const colorGreen = "\033[32m"
-	const colorReset = "\033[0m"
-	//const colorYellow = "\033[33m"
-	const backGroundBlack = "\033[40m"
-	//const AttrReversed = "\033[7m"
-	const colorCyan = "\033[36m"
 
 	rl, err := readline.New(">")
 	if err != nil {
@@ -113,16 +106,16 @@ func interactiveSession(ctx context.Context, modelAction genainterface.Action) {
 	}()
 
 	for {
+
 		// Set the prompt with the color codes
-		fmt.Print(colorGreen + "('exit' to quit, `file` to upload, `prompt` to update systeminstruction) ")
-		fmt.Println(colorCyan + backGroundBlack)
+		terminal.PrintPrompt(modelAction.GetHistoryLength())
 
 		prompt, err := rl.Readline()
 		if err != nil {
 			fmt.Println("Error reading input:", err)
 			continue
 		}
-		fmt.Print(colorReset)
+		terminal.PrintColourReset()
 
 		if prompt == "exit" {
 			fmt.Println("Exiting...")
