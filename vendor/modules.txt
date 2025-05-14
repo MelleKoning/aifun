@@ -97,7 +97,7 @@ github.com/go-logr/stdr
 # github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da
 ## explicit
 github.com/golang/groupcache/lru
-# github.com/google/generative-ai-go v0.19.0
+# github.com/google/generative-ai-go v0.20.1
 ## explicit; go 1.21
 github.com/google/generative-ai-go/genai
 github.com/google/generative-ai-go/genai/internal
@@ -322,7 +322,7 @@ google.golang.org/api/option/internaloption
 google.golang.org/api/transport/grpc
 google.golang.org/api/transport/http
 google.golang.org/api/transport/http/internal/propagation
-# google.golang.org/genai v1.4.0
+# google.golang.org/genai v1.5.0
 ## explicit; go 1.23
 google.golang.org/genai
 # google.golang.org/genproto/googleapis/api v0.0.0-20240903143218-8af14fe29dc1
