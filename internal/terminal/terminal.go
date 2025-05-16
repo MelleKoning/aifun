@@ -16,10 +16,29 @@ const backGroundBlack = "\033[40m"
 // const AttrReversed = "\033[7m"
 const colorCyan = "\033[36m"
 
-func PrintGlamourString(theString string) {
-	//result := markdown.Render(theString, 80, 6)
+type GlamourRenderer interface {
+	GetRendered(string) (string, error)
+}
 
-	glamour.WithWordWrap(120)
+type glamourRenderer struct {
+	gr *glamour.TermRenderer
+}
+
+func New() (GlamourRenderer, error) {
+	r, err := glamour.NewTermRenderer(glamour.WithStandardStyle("dracula"))
+	if err != nil {
+		return nil, err
+	}
+	return &glamourRenderer{
+		gr: r,
+	}, nil
+}
+
+func (gr *glamourRenderer) GetRendered(str string) (string, error) {
+	return gr.gr.Render(str)
+}
+
+func PrintGlamourString(theString string) {
 	termRenderer, err := glamour.NewTermRenderer(glamour.WithWordWrap(120), glamour.WithStandardStyle("dracula"))
 	if err != nil {
 		fmt.Println("can not initialize termRenderer")
