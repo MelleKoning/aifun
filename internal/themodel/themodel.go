@@ -33,6 +33,8 @@ type Request struct {
 	filePart genai.Part
 }
 
+// Only kept for documentation purposes - superseded
+// by the genaimodel package - will be deleted later
 type Action interface {
 	ReviewFile()
 	ChatMessage(text string)

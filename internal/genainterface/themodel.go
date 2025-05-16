@@ -25,6 +25,9 @@ type theModel struct {
 	chatHistory       []*genai.Content
 }
 
+// This interface is not being worked on anymore at the moment
+// but supports the /cmd/diffreviewer entry point
+// the later entrypoint is /cmd/tviewchat
 type Action interface {
 	ReviewFile() error
 	ChatMessage(string)
