@@ -18,6 +18,7 @@ const colorCyan = "\033[36m"
 
 type GlamourRenderer interface {
 	GetRendered(string) (string, error)
+	GetUserRendered(string, int) (string, error)
 }
 
 type glamourRenderer struct {
@@ -34,10 +35,17 @@ func New() (GlamourRenderer, error) {
 	}, nil
 }
 
+// GetRendered executs a Glamour action on a markdown string
+// to colorize it with ANSI colour codes and returns the result
 func (gr *glamourRenderer) GetRendered(str string) (string, error) {
 	return gr.gr.Render(str)
 }
 
+func (gr *glamourRenderer) GetUserRendered(str string, historyLength int) (string, error) {
+	s := fmt.Sprintf("History items: %d\n", historyLength)
+	s = s + colorGreen + str
+	return s, nil
+}
 func PrintGlamourString(theString string) {
 	termRenderer, err := glamour.NewTermRenderer(glamour.WithWordWrap(120), glamour.WithStandardStyle("dracula"))
 	if err != nil {
