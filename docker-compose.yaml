@@ -8,37 +8,57 @@ services:
       resources:
         reservations:
           devices:
-          - driver: nvidia
-            capabilities: ["gpu"]
-            count: all
+            - driver: nvidia
+              capabilities: ["gpu"]
+              count: all
     volumes:
       - ~/.ollama:/root/.ollama
     restart: unless-stopped
-    tty: true
     environment:
       - gpus=all
       - OLLAMA_HOST=0.0.0.0
       - OLLAMA_CONTEXT_LENGTH=30000
       - OLLAMA_USE_GPU=true
-      - OLLAMA_API_KEY={OLLAMA_API_KEY}
+      - OLLAMA_API_KEY=${OLLAMA_API_KEY}
 
+  open-webui:
+    image: ghcr.io/open-webui/open-webui:latest
+    container_name: open-webui
+    volumes:
+      - open-webui-vol:/app/backend/data  # Persists chats/settings
+      - ~/src/:/src                        # Gives AI access to your files
+    profiles: ["ui"] # Run with --profile ui
+    depends_on:
+      - ollama
+    ports:
+      - "20080:8080"
+    environment:
+      - OLLAMA_BASE_URL=http://ollama:11434
+      - 'WEBUI_SECRET_KEY='
+    restart: unless-stopped
 
-#  open-webui:
-#    image: ghcr.io/open-webui/open-webui:latest
-#    container_name: open-webui
-#    volumes:
-#      - open-webui:/app/backend/data
-#      - ~/src/:/src
-#    depends_on:
-#      - ollama
-#    ports:
-#      - 20080:8080
-#    environment:
-#      - 'OLLAMA_BASE_URL=http://ollama:11434'
-#      - 'WEBUI_SECRET_KEY='
-#    extra_hosts:
-#      - host.docker.internal:host-gateway
-#    restart: unless-stopped
+  searxng:
+    image: searxng/searxng:latest
+    container_name: searxng
+    profiles: ["research"] # Run with --profile research
 
-#volumes:
-#  open-webui: {}
+  local-deep-research:
+    image: localdeepresearch/local-deep-research
+    container_name: local-deep-research
+    profiles: ["research"] # Run with --profile research
+    ports:
+      - "5000:5000"
+    depends_on:
+      - searxng
+    environment:
+      - LDR_DATA_DIR=/data
+      - SEARXNG_URL=http://searxng:8080
+      - LDR_LLM_PROVIDER=openai_endpoint
+      - LDR_LLM_OPENAI_ENDPOINT_URL=https://openrouter.ai/api/v1
+      - LDR_LLM_OPENAI_ENDPOINT_API_KEY=${OPENROUTER_API_KEY}
+    volumes:
+      - deep-research-vol:/data
+
+volumes:
+  deep-research-vol: {}
+  open-webui-vol: {}
